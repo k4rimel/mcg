@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -17,21 +18,27 @@ import (
 	"time"
 )
 
-const WIDTH = 300
-const HEIGHT = 200
+const WIDTH = 800
+const HEIGHT = 400
+const friction = 0.5
 
 var COLORS = []string{"blue", "green", "yellow", "red", "black", "purple", "pink"}
 
+type Velocity struct {
+	vX float64
+	vY float64
+}
+
 type Player struct {
-	Id    string
-	X     float64
-	Y     float64
-	dX    float64
-	dY    float64
-	time  float64
-	color string
-	gX    float64
-	gY    float64
+	Id       string
+	X        float64
+	Y        float64
+	dX       float64
+	dY       float64
+	time     float64
+	color    string
+	velocity *Velocity
+	mass     float64
 }
 
 func newPlayer() *Player {
@@ -45,13 +52,16 @@ func newPlayer() *Player {
 	idColor := random(0, len(COLORS)-1)
 	id := base64.URLEncoding.EncodeToString(rb)
 
-	return &Player{Id: id, X: WIDTH / 2, Y: HEIGHT / 2, dX: 1, dY: 1, time: 0.5, gX: 0, gY: 0, color: COLORS[idColor]}
+	return &Player{Id: id, X: WIDTH / 2, Y: HEIGHT / 2, dX: 1, dY: 1, time: 0.2, velocity: &Velocity{vX: 0, vY: 0}, color: COLORS[idColor], mass: 500}
 }
 
 type Game struct {
 	players map[*melody.Session]*Player
 }
 
+func newGame() *Game {
+	return &Game{players: make(map[*melody.Session]*Player)}
+}
 func newGame() *Game {
 	return &Game{players: make(map[*melody.Session]*Player)}
 }
@@ -87,29 +97,26 @@ func (this *Game) run() {
 	go func() {
 		for {
 			<-ticker.C
-			for _, p := range this.players {
+			for _, player := range this.players {
 
-				//p.X += p.time * (p.dX - p.X)
-				//p.Y += p.time * (p.dY - p.Y)
-
-				tempx := p.X + p.time*(p.dX-p.X) + p.gX
-				tempy := p.Y + p.time*(p.dY-p.Y) + p.gY
+				xPrime := player.X + player.time*(player.dX-player.X) //+ player.velocity.vX
+				yPrime := player.Y + player.time*(player.dY-player.Y) //+ player.velocity.vY
 
 				collision := false
 
-				for _, fp := range this.players {
+				for _, otherPlayer := range this.players {
 
-					if fp == p {
+					if otherPlayer == player {
 						continue
 					}
-					cdx := tempx - fp.X
-					cdy := tempy - fp.Y
-					dist := math.Sqrt(cdx*cdx + cdy*cdy)
+					xLen := xPrime - otherPlayer.X
+					yLen := yPrime - otherPlayer.Y
+					dist := math.Sqrt(xLen*xLen + yLen*yLen)
 
 					if dist < 20 {
 						collision = true
-						fp.gX = 0.8
-						fp.gY = 0.6
+						otherPlayer.velocity.vX = 0.8
+						otherPlayer.velocity.vY = 0.6
 					}
 				}
 
@@ -117,34 +124,32 @@ func (this *Game) run() {
 					continue
 				}
 
-				p.X = tempx
-				p.Y = tempy
+				player.X = xPrime
+				player.Y = yPrime
 
-				if p.X > WIDTH {
-					p.X = WIDTH
-					p.time = 0
+				if player.X > WIDTH {
+					player.X = WIDTH
+					player.time = 0
 				}
-				if p.Y > HEIGHT {
-					p.Y = HEIGHT
-					p.time = 0
+				if player.Y > HEIGHT {
+					player.Y = HEIGHT
+					player.time = 0
 				}
 
-				//if p.time < 1 {
-				p.time = 0.01
+				//if player.time < 1 {
+				player.time = 0.01
 				//}
 
-				if p.gX > 0 {
-					p.gX -= 0.01
+				if player.velocity.vX > 0 {
+					player.dX += 0.01 * (-player.velocity.vX)
 				}
 
-				if p.gY > 0 {
-					p.gY -= 0.01
+				if player.velocity.vY > 0 {
+					player.dY += 0.01 * (-player.velocity.vY)
 				}
 
 				for s, _ := range this.players {
-					// fmt.Println("player:" + p.Id + ":" + strconv.FormatInt(p.X, 10) + "," + strconv.FormatInt(p.Y, 10))
-
-					s.Write([]byte("player:" + p.Id + ":" + strconv.FormatFloat(p.X, 'f', 3, 64) + "," + strconv.FormatFloat(p.Y, 'f', 3, 64)))
+					s.Write([]byte("player:" + player.Id + ":" + strconv.FormatFloat(player.X, 'f', 3, 64) + "," + strconv.FormatFloat(player.Y, 'f', 3, 64)))
 				}
 
 			}
@@ -185,10 +190,11 @@ func main() {
 	})
 
 	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		//fmt.Println(fmt.Sprintf("message %s", string(msg)))
 		mouseCoord := getCoords(string(msg))
 		p := game.GetPlayer(s)
 		p.time = 0
+		p.velocity.vX *= friction
+		p.velocity.vY *= friction
 		p.dX = mouseCoord.X
 		p.dY = mouseCoord.Y
 
@@ -241,4 +247,20 @@ func getCoords(s string) *coordinates {
 func random(min, max int) int {
 	mathrand.Seed(time.Now().Unix())
 	return mathrand.Intn(max-min) + min
+}
+func dot(x, y []int) (r int, err error) {
+	if len(x) != len(y) {
+		return 0, errors.New("incompatible lengths")
+	}
+	for i := range x {
+		r += x[i] * y[i]
+	}
+	return
+}
+func collide(p1 Player, p2 Player) {
+	if(true)
+	return
+
+	collision 
+
 }
