@@ -14,8 +14,6 @@ ws.onmessage = function(msg) {
     		var tabPos = cmd[2].split(',');
     		players[cmd[1]].x = tabPos[0];
     		players[cmd[1]].y = tabPos[1];
-    		
-
     	break;
         case "add":
             var tabPos = cmd[2].split(',');
@@ -42,8 +40,8 @@ var dx = 5;
 var dy = 5;
 var x = 150;
 var y = 100;
-var WIDTH = 300;
-var HEIGHT = 200;
+var WIDTH = 800;
+var HEIGHT = 400;
 
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
@@ -76,6 +74,7 @@ function clear() {
 
 function init() {
     canvas = document.getElementById("canvas");
+    canvas.style = "margin: 0 auto;"
     ctx = canvas.getContext("2d");
     canvas.addEventListener('mousemove', function(evt) {
         var mousePos = getMousePos(canvas, evt);
