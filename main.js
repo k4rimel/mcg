@@ -11,8 +11,8 @@ window.onload = function() {
 		ball.turningLeft = false;
 		ball.turningRight = false;
 		ball.thrusting = false;
-		ball.radius = 30;
-		ball.setMass(100);
+		ball.radius = 10;
+		ball.setMass(1);
 
 		ball2 = particle.create(750, 600, 0, 0);
 		ball2.thrust = vector.create(0, 0);
@@ -75,9 +75,6 @@ window.onload = function() {
         	ball.thrusting = false;
         }
  	}
- 	function saveMousePos(pos) {
- 		
- 	}
  	canvas.addEventListener('mousemove', function(evt) {
  		var mousePos = getMousePos(canvas, evt);
  		if(mousestop) {
@@ -92,50 +89,6 @@ window.onload = function() {
 	    followCursor(mousePos);
 
  	}, false);
-	document.body.addEventListener("keydown", function(event) {
-		// console.log(event.keyCode);
-		switch(event.keyCode) {
-			case 38: // up
-				ball.thrusting = true;
-				break;
-				
-			case 37: // left
-				ball.turningLeft = true;
-				break;
-				
-			case 39: // right
-				ball.turningRight = true;
-				break;			
-
-			case 13: // enter : debug
-				break;
-
-			default:
-				break;
-				
-		}
-	});
-
-	document.body.addEventListener("keyup", function(event) {
-		// console.log(event.keyCode);
-		switch(event.keyCode) {
-			case 38: // up
-				ball.thrusting = false;
-				break;
-				
-			case 37: // left
-				ball.turningLeft = false;
-				break;
-				
-			case 39: // right
-				ball.turningRight = false;
-				break;
-
-			default:
-				break;
-				
-		}
-	});
 	function drawBall(obj, stopColor, thrustColor) {
 		context.save();
 		context.beginPath();
@@ -169,7 +122,6 @@ window.onload = function() {
       	context.arc(width/2, height/2, radius, 0, 2 * Math.PI, false);
       	context.fillStyle = '#4679BD';
       	context.fill();
-      	// context.lineWidth = 5;
       	context.strokeStyle = '#4679BD';
       	context.stroke();
       	context.closePath();
@@ -179,62 +131,11 @@ window.onload = function() {
 								ball2.position.getY() - ball1.position.getY());
 		return nVector;
 	}
-	// function getUNVector(nVector) {
-	// 	unVector = nVector.divide(Math.sqrt(Math.pow(nVector.getX(), 2), Math.pow(nVector.getY(), 2)));
-	// 	return unVector;
-	// }
 	function getUTVector(unVector) {
 		utVector = vector.create(-1*unVector.getY(), unVector.getX());
 		return utVector;
 	}
 	function collide(ball1, ball2) {
-
-		// unVector = getNVector(ball1, ball2);
-		// // unVector = getUNVector(getNVector(ball1, ball2));
-		// utVector = getUTVector(getNVector(ball1, ball2));
-
-		// v1 = ball1.velocity;
-		// v2 = ball2.velocity;
-
-		// m1 = ball1.mass;
-		// m2 = ball2.mass;
-
-		// v1n = unVector.dotProduct(v1);
-		// v2n = unVector.dotProduct(v2);
-
-		// v1t = utVector.dotProduct(v1);
-		// v2t = utVector.dotProduct(v2);
-
-		// v1nPrime = ( ( v1n*(m1-m2) ) + (2*m2*v2n) ) / (m1+m2);
-		// v2nPrime = ( ( v2n*(m2-m1) ) + (2*m1*v1n) ) / (m1+m2);
-		// v1tPrime = v1t;
-		// v2tPrime = v2t;
-
-		// v1nPrimeV = unVector.multiply(v1nPrime);
-		// v2nPrimeV = unVector.multiply(v2nPrime);
-		// v1tPrimeV = utVector.multiply(v1tPrime);
-		// v2tPrimeV = utVector.multiply(v2tPrime);
-
-		// v1Prime = v1nPrimeV.addTo(v1tPrimeV);
-		// v2Prime = v2nPrimeV.addTo(v2tPrimeV);
-		// if(v1Prime !== 'undefined' && v2Prime !== 'undefined') {
-		// 	console.log((2*m2*v2n));
-
-
-
-		// 	console.log(unVector);
-		// 	console.log(v1nPrime);
-		// 	console.log(v1tPrimeV);
-		// 	console.log(v1Prime);
-		// } else {
-		// 	console.log(v1nPrimeV);
-		// 	console.log(v1tPrimeV);
-		// 	console.log(v2nPrimeV);
-		// 	console.log(v2tPrimeV);
-		// }
-
-		// ball1.velocity = v1Prime;
-		// ball2.velocity = v2Prime;
 		var xDistance = (ball2.position.getX() - ball1.position.getX());
 		var yDistance = (ball2.position.getY() - ball1.position.getY());
 
@@ -262,9 +163,6 @@ window.onload = function() {
 
 		ball1.velocity = ball1ScalarNormalVector.add(ball1scalarNormalAfter_vector);
 		ball2.velocity = ball2ScalarNormalVector.add(ball2scalarNormalAfter_vector);
-
-		// ball1.position = ball1.lastGoodPosition;
-		// ball2.position = ball2.lastGoodPosition;
 	}
 	function update() {
 
@@ -302,7 +200,6 @@ window.onload = function() {
 			console.log('collision');
 			collide(ball, ball2);
 		}
-		// requestAnimationFrame();
 	}
 	setInterval(update, 10);
 };
